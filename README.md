@@ -50,3 +50,7 @@ add or rename a page, also update the page list in that repository's `apps/web/l
 | `scripts/ask_model.py` | Sent the prompt to the model once; the build doesn't run it |
 | `tests/` | Tests for `threadtools.py` |
 | `style.css`, `images/` | Site colours, logo and favicon |
+
+## License
+
+The code (`threadtools.py`, `charts.py`, `scripts/`, `tests/` and the code cells in the notebooks) is under the MIT License, see `LICENSE`. The book text and the sample data in `data/` are under CC BY 4.0, see `LICENSE-CC-BY-4.0.txt`. The Inter font in `fonts/` keeps its own license, `fonts/OFL.txt`. The Comment Scraper name and logo in `images/` aren't covered by either license.
