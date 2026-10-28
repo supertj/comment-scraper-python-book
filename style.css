@@ -1,0 +1,18 @@
+/* Comment Scraper teal in place of the theme's default blue (same values as the main site) */
+:root {
+  --myst-color-link: #136f79;
+  --myst-color-link-hover: #0e555d;
+  --myst-color-link-underline: #136f79;
+  --myst-color-active: #136f79;
+  --myst-color-focus-ring: #136f79;
+  --myst-color-primary: #136f79;
+}
+
+.dark {
+  --myst-color-link: #47c3d1;
+  --myst-color-link-hover: #74d3de;
+  --myst-color-link-underline: #47c3d1;
+  --myst-color-active: #47c3d1;
+  --myst-color-focus-ring: #47c3d1;
+  --myst-color-primary: #47c3d1;
+}

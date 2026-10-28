@@ -1,0 +1,41 @@
+# Jupyter Book 2 (MyST) configuration. Build: see README.md.
+version: 1
+project:
+  title: Reading Reddit and Hacker News threads in Python
+  subtitle: Filter, count and check the comments in a thread export
+  description: A short book on working with an exported Reddit or Hacker News thread in pandas. Check the reply tree, filter by depth, score and OP, count the words people use, and check the quotes an LLM pulls from numbered comments.
+  authors:
+    - name: Super Lede
+      affiliations:
+        - Comment Scraper
+  keywords:
+    - Reddit
+    - Hacker News
+    - pandas
+    - text analysis
+    - LLM citations
+  toc:
+    - file: index.md
+    - file: load-and-check.ipynb
+    - file: filter-comments.ipynb
+    - file: count-words.ipynb
+    - file: check-llm-citations.ipynb
+    - file: run-it-yourself.md
+  exclude:
+    - README.md
+site:
+  template: book-theme
+  # Suffix of every page's <title>; without it the home page title repeats the project title
+  title: Comment Scraper
+  options:
+    logo: images/logo.svg
+    logo_text: Comment Scraper
+    favicon: images/favicon.ico
+    style: style.css
+    # links to the main site open in the same tab and are not marked as external
+    internal_domains: comment-scraper.com
+  parts:
+    primary_sidebar_footer: |
+      Built with Jupyter Book 2.
+    footer: |
+      Written by Super Lede for [Comment Scraper](https://comment-scraper.com/), which exports Reddit and Hacker News threads to CSV, JSON and Markdown. Field reference: [help pages](https://comment-scraper.com/docs).
