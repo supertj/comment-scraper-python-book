@@ -127,6 +127,17 @@ def test_citations_in_parentheses_and_unpaired_quotes():
     assert t.quotes_not_checked(answer) == ['- "Nothing like it." [c1] (they also said "more")']
 
 
+def test_unpaired_quotes_are_found_across_lines_and_repeats():
+    answer = '\n'.join([
+        '- "a quote that runs',
+        'onto a second line" [c1]',   # paired: the citation follows the closing quote
+        '- "cited on the next line"',
+        '  [c2]',                      # paired: whitespace, newline included, is allowed
+        '- "same words" [c1] and again "same words"',  # the second one has no citation
+    ])
+    assert t.quotes_not_checked(answer) == ['- "same words" [c1] and again "same words"']
+
+
 def test_batch_exports_must_be_split_by_thread(tmp_path):
     first = [record(None, None, None, 10, "post"), record("c1", "abc1234", 0, 5)]
     second = [{**row, "thread_id": "xyz9876"} for row in first]

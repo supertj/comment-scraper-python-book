@@ -274,12 +274,20 @@ def check_quotes(answer, comments, numbers):
 
 
 def quotes_not_checked(answer):
-    """Lines with a quoted phrase that check_quotes couldn't pair with citations."""
+    """Lines where a quoted phrase starts that check_quotes couldn't pair with citations.
+
+    Compares positions in the whole answer, so a quote spanning two lines, citations on
+    the next line and a repeated quote are all handled the way check_quotes sees them.
+    """
+    paired = {match.span(1) for match in QUOTE_THEN_CITATIONS.finditer(answer)}
     lines = []
-    for line in answer.splitlines():
-        checked = {m.group(1) for m in QUOTE_THEN_CITATIONS.finditer(line)}
-        if any(quote not in checked for quote in QUOTED.findall(line)):
-            lines.append(line.strip())
+    for match in QUOTED.finditer(answer):
+        if match.span(1) not in paired:
+            start = answer.rfind("\n", 0, match.start()) + 1
+            end = answer.find("\n", match.start())
+            line = answer[start:end if end != -1 else None].strip()
+            if line not in lines:
+                lines.append(line)
     return lines
 
 

@@ -1,5 +1,6 @@
-/* Inter, the main site's typeface: the latin subset of the variable font (SIL Open Font
-   License, fonts/OFL.txt). build-for-site.sh copies fonts/ next to the book, hence the
+/* Inter, the main site's typeface: Inter 4.1 variable (weight and optical size axes) from
+   the official release, cut down to the latin subset with pyftsubset. SIL Open Font
+   License, fonts/OFL.txt. build-for-site.sh copies fonts/ next to the book, hence the
    absolute /book path; a local preview without it falls back to the system font. */
 @font-face {
   font-family: "Inter";
@@ -17,8 +18,15 @@ body {
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-/* Headings at 600, as on the main site. The theme sets h1 to 800 and h2 to 700. */
+/* Headings at 600, as on the main site. The theme sets h1 to 800 and h2 to 700 inside
+   .article (the page) and .prose. */
+.article :where(h1, h2):not(:where([class~="not-prose"], [class~="not-prose"] *)),
 .prose :where(h1, h2):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-weight: 600;
+}
+
+/* The sidebar marks the book's title in bold; the main site keeps bold for the logo only */
+.myst-toc-item.font-bold {
   font-weight: 600;
 }
 
