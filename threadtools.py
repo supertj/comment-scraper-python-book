@@ -42,8 +42,17 @@ def load_export(path):
     return records, pd.DataFrame(metas)
 
 
+def one_thread(records):
+    """A batch export holds several threads; the functions below take one at a time."""
+    thread_ids = records.thread_id.unique()
+    if len(thread_ids) != 1:
+        raise ValueError(f"{len(thread_ids)} threads in these rows; pick one first, "
+                         "e.g. records[records.thread_id == records.thread_id.iloc[0]]")
+
+
 def check_tree(records):
     """Split one thread into post and comments; check replies point one level up."""
+    one_thread(records)
     post = records[records.record_type == "post"].iloc[0]
     comments = records[records.record_type == "comment"].copy()
 
@@ -148,6 +157,7 @@ def describe_status(meta):
 
 def thread_markdown(records, meta):
     """One thread in the layout of the extension's Markdown export."""
+    one_thread(records)
     post = records[records.record_type == "post"].iloc[0]
     numbers = number_comments(records)
     now = pd.Timestamp(meta["fetched_at"])
@@ -207,16 +217,31 @@ def with_prompt(prompt, markdown):
 
 # ------------------------------------------------------ checking what a model cites
 CITATION = re.compile(r"\[c\d+")
-# A quote in straight or curly double quotes, then its citations:
-# [c3], [c3][c7] or [c3, c7]
+QUOTED = re.compile(r"[\"“]([^\"”]+)[\"”]")
+# A quote in straight or curly double quotes, then its citations, possibly in
+# parentheses: [c3], [c3][c7], [c3, c7] or ([c3])
 QUOTE_THEN_CITATIONS = re.compile(
-    r"[\"“]([^\"”]+)[\"”]\s*((?:\[c\d+(?:\s*[,;]\s*c\d+)*\][,;\s]*)+)")
+    r"[\"“]([^\"”]+)[\"”]\s*\(?((?:\[c\d+(?:\s*[,;]\s*c\d+)*\][,;\s]*)+)\)?")
 CURLY = str.maketrans({"’": "'", "‘": "'", "“": '"', "”": '"'})
 
 
 def normalise(text):
     """Compare as a reader would: ignore case, curly quotes and spacing."""
     return " ".join(text.translate(CURLY).lower().split())
+
+
+def exactly_in(quote, body):
+    """The quote as written, starting and ending at word boundaries.
+
+    So "rice is" doesn't match "price is", and "$12." doesn't match "$12.49".
+    """
+    return re.search(r"(?<!\w)" + re.escape(quote) + r"(?!\w)", body) is not None
+
+
+def loosely_in(quote, body):
+    """The same words, ignoring case, curly quotes, spacing and a final . or ,"""
+    words = re.escape(normalise(quote).rstrip(".,"))
+    return re.search(r"(?<!\w)" + words + r"(?!\.?\w)", normalise(body)) is not None
 
 
 def check_quotes(answer, comments, numbers):
@@ -226,25 +251,36 @@ def check_quotes(answer, comments, numbers):
     state_of = dict(zip(by_number.number, by_number.comment_state))
     rows = []
     for match in QUOTE_THEN_CITATIONS.finditer(answer):
-        quote = match.group(1).strip().rstrip(".,")
+        quote = match.group(1).strip()
         cited = [int(n) for n in re.findall(r"c(\d+)", match.group(2))]
         for number in cited:
             body = body_of.get(number)
-            if body is None:
+            if not re.search(r"\w", quote):
+                verdict = "no words to check"
+            elif body is None:
                 verdict = "no such comment"
             elif state_of[number] != "normal":
                 verdict = f"cites a {state_of[number]} comment"
-            elif quote in body:
+            elif exactly_in(quote, body):
                 verdict = "exact"
-            elif normalise(quote) in normalise(body):
+            elif loosely_in(quote, body):
                 verdict = "same words, different case or punctuation"
             else:
-                elsewhere = [n for n, text in body_of.items()
-                             if normalise(quote) in normalise(text)]
+                elsewhere = [n for n, text in body_of.items() if loosely_in(quote, text)]
                 verdict = (f"found in [c{elsewhere[0]}] instead" if elsewhere
                            else "not in this comment")
             rows.append({"quote": quote, "cited": f"c{number}", "verdict": verdict})
     return pd.DataFrame(rows, columns=["quote", "cited", "verdict"])
+
+
+def quotes_not_checked(answer):
+    """Lines with a quoted phrase that check_quotes couldn't pair with citations."""
+    lines = []
+    for line in answer.splitlines():
+        checked = {m.group(1) for m in QUOTE_THEN_CITATIONS.finditer(line)}
+        if any(quote not in checked for quote in QUOTED.findall(line)):
+            lines.append(line.strip())
+    return lines
 
 
 def uncited_lines(answer):

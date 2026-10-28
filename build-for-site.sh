@@ -34,4 +34,6 @@ find _build/html -name '*.html.bak' -delete
 rm -rf "$target"
 mkdir -p "$target"
 cp -R _build/html/. "$target/"
+# style.css loads Inter from /book/fonts/; MyST only copies files the pages reference
+cp -R fonts "$target/fonts"
 echo "Copied $(find "$target" -type f | wc -l | tr -d ' ') files to $target"

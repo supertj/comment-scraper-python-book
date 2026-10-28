@@ -3,9 +3,14 @@
 import json
 from pathlib import Path
 
+import matplotlib
 import pandas as pd
+import pytest
 
-import threadtools as t
+matplotlib.use("Agg")  # no display needed for the chart test
+
+import charts  # noqa: E402
+import threadtools as t  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -102,6 +107,42 @@ def test_quote_checks():
         "cites a deleted comment",
     ]
     assert t.uncited_lines(answer) == ["- A point with no citation"]
+
+
+def test_quote_checks_do_not_pass_shortened_or_empty_quotes():
+    comments = pd.DataFrame({"comment_id": ["a"], "body": ["The price is $12.49 now."],
+                             "comment_state": ["normal"]})
+    answer = '- "The price is $12." [c1]\n- "..." [c1]\n- "the price is $12.49" [c1]'
+    checked = t.check_quotes(answer, comments, {"a": 1})
+    assert checked.verdict.tolist() == [
+        "not in this comment", "no words to check", "same words, different case or punctuation"]
+
+
+def test_citations_in_parentheses_and_unpaired_quotes():
+    comments = pd.DataFrame({"comment_id": ["a"], "body": ["Nothing like it."],
+                             "comment_state": ["normal"]})
+    answer = '- "invented claim" ([c1])\n- "Nothing like it." [c1] (they also said "more")'
+    checked = t.check_quotes(answer, comments, {"a": 1})
+    assert checked.verdict.tolist() == ["not in this comment", "exact"]
+    assert t.quotes_not_checked(answer) == ['- "Nothing like it." [c1] (they also said "more")']
+
+
+def test_batch_exports_must_be_split_by_thread(tmp_path):
+    first = [record(None, None, None, 10, "post"), record("c1", "abc1234", 0, 5)]
+    second = [{**row, "thread_id": "xyz9876"} for row in first]
+    rows, _ = t.load_export(write_export(tmp_path, first + second))
+    with pytest.raises(ValueError, match="2 threads"):
+        t.check_tree(rows)
+    _, comments = t.check_tree(rows[rows.thread_id == "abc1234"])
+    assert len(comments) == 1
+
+
+def test_score_chart_refuses_a_thread_without_scores():
+    hn, _ = t.load_export(DATA / "sample_hn_thread.json")
+    comments = hn[hn.record_type == "comment"]
+    scored = comments[comments.score.notna()]
+    with pytest.raises(ValueError, match="no visible scores"):
+        charts.score_by_depth(scored, scored.iloc[0:0])
 
 
 def test_saved_prompt_matches_the_sample_thread():

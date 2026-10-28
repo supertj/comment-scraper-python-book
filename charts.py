@@ -32,6 +32,8 @@ def _symlog_ticks(low, high):
 
 def score_by_depth(scored, winners):
     """Every scored comment by reply depth; replies that outscored their parent in orange."""
+    if scored.empty:  # e.g. a Hacker News thread, which has no comment scores
+        raise ValueError("no visible scores to plot")
     rng = np.random.default_rng(3)  # fixed jitter so the chart is the same on every build
     x = scored.depth.astype(float) + rng.uniform(-0.18, 0.18, len(scored))
     is_winner = scored.comment_id.isin(winners.comment_id).to_numpy()
